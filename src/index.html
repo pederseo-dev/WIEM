@@ -2,56 +2,276 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WIEM Monitor</title>
-</head>
-<body>
-    <h1>WIEM - Monitor de Audio</h1>
-    <button id="btn">Conectar</button>
-    <p id="estado">Desconectado</p>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <script>
-let audioCtx = null;
-let nextPlayTime = 0;
-let ws = null;
-
-document.getElementById('btn').addEventListener('click', () => {
-    const estado = document.getElementById('estado');
-
-    // Creamos el contexto DENTRO del click para que el browser lo permita
-    audioCtx = new AudioContext({ sampleRate: 48000 });
-    nextPlayTime = 0;
-
-    ws = new WebSocket(`ws://${location.host}/ws`);
-    ws.binaryType = 'arraybuffer';
-
-    estado.textContent = 'Conectando...';
-
-    ws.onopen = () => {
-        estado.textContent = 'Conectado';
-    };
-
-    ws.onmessage = (event) => {
-        const float32Array = new Float32Array(event.data);
-        const buffer = audioCtx.createBuffer(1, float32Array.length, 48000);
-        buffer.copyToChannel(float32Array, 0);
-
-        const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioCtx.destination);
-
-        const currentTime = audioCtx.currentTime;
-        if (nextPlayTime < currentTime) {
-            nextPlayTime = currentTime + 0.01;
+        :root {
+            --bg: #f4f3ef;
+            --surface: #ffffff;
+            --border: #e2e0d8;
+            --text-primary: #1a1a18;
+            --text-secondary: #7a7870;
+            --accent: #1a1a18;
+            --accent-muted: #e8e7e2;
+            --green: #3B6D11;
+            --green-bg: #EAF3DE;
+            --red: #A32D2D;
         }
 
-        source.start(nextPlayTime);
-        nextPlayTime += buffer.duration;
-    };
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.25rem;
+        }
 
-    ws.onclose = () => {
-        estado.textContent = 'Desconectado';
-    };
-});
+        /* ---- LOGO ---- */
+        .logo {
+            font-family: 'DM Mono', monospace;
+            font-size: 2rem;
+            font-weight: 500;
+            letter-spacing: -0.04em;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo span {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff;
+            padding: 0 4px 0 2px;
+            border-radius: 4px;
+            margin-left: 1px;
+        }
+
+        .tagline {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 2.5rem;
+            font-family: 'DM Mono', monospace;
+        }
+
+        /* ---- CARD ---- */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .field-label {
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7870' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            cursor: pointer;
+            margin-bottom: 1.25rem;
+        }
+
+        select:focus { outline: none; border-color: var(--accent); }
+
+        /* ---- BUTTON ---- */
+        .btn {
+            width: 100%;
+            padding: 0.875rem;
+            font-size: 0.95rem;
+            font-family: 'DM Mono', monospace;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .btn:active { opacity: 0.8; }
+        .btn.conectado { background: var(--red); }
+
+        /* ---- STATUS ---- */
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.25rem;
+            font-size: 0.85rem;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-secondary);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border);
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+
+        .dot.activo { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+        .dot.conectando { background: #EF9F27; }
+
+        /* ---- DIVIDER ---- */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 1.25rem 0;
+        }
+
+        /* ---- FOOTER ---- */
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.7rem;
+            font-family: 'DM Mono', monospace;
+            color: var(--text-secondary);
+            letter-spacing: 0.06em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logo">W<span>IEM</span></div>
+    <p class="tagline">WiFi In-Ear Monitor</p>
+
+    <div class="card">
+        <p class="field-label">Canal de audio</p>
+        <select id="selector"></select>
+
+        <button class="btn" id="btn">Conectar</button>
+
+        <hr class="divider">
+
+        <div class="status">
+            <div class="dot" id="dot"></div>
+            <span id="estado">Desconectado</span>
+        </div>
+    </div>
+
+    <p class="footer">v0.1.0 — red local</p>
+
+    <script>
+        let audioCtx = null;
+        let nextPlayTime = 0;
+        let ws = null;
+        let conectado = false;
+
+        async function cargarCanales() {
+            const respuesta = await fetch('/canales');
+            const canales = await respuesta.json();
+            const selector = document.getElementById('selector');
+            selector.innerHTML = '';
+            canales.forEach((canal) => {
+                const opcion = document.createElement('option');
+                opcion.value = canal.id;
+                opcion.textContent = canal.nombre;
+                selector.appendChild(opcion);
+            });
+        }
+
+        cargarCanales();
+
+        document.getElementById('btn').addEventListener('click', () => {
+            if (conectado) {
+                desconectar();
+                return;
+            }
+            conectar();
+        });
+
+        function conectar() {
+            const btn = document.getElementById('btn');
+            const estado = document.getElementById('estado');
+            const dot = document.getElementById('dot');
+            const nombreCanal = document.getElementById('selector').selectedOptions[0].textContent;
+            const seleccion = document.getElementById('selector').value;
+
+            if (ws) ws.close();
+
+            audioCtx = new AudioContext({ sampleRate: 48000 });
+            nextPlayTime = 0;
+
+            ws = new WebSocket(`ws://${location.host}/ws/${seleccion}`);
+            ws.binaryType = 'arraybuffer';
+
+            dot.className = 'dot conectando';
+            estado.textContent = 'Conectando...';
+            btn.textContent = 'Cancelar';
+
+            ws.onopen = () => {
+                conectado = true;
+                dot.className = 'dot activo';
+                estado.textContent = nombreCanal;
+                btn.textContent = 'Desconectar';
+                btn.classList.add('conectado');
+            };
+
+            ws.onmessage = (event) => {
+                const float32Array = new Float32Array(event.data);
+                const buffer = audioCtx.createBuffer(1, float32Array.length, 48000);
+                buffer.copyToChannel(float32Array, 0);
+
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+
+                const currentTime = audioCtx.currentTime;
+                if (nextPlayTime < currentTime) {
+                    nextPlayTime = currentTime;
+                }
+
+                source.start(nextPlayTime);
+                nextPlayTime += buffer.duration;
+            };
+
+            ws.onclose = () => {
+                desconectarUI();
+            };
+        }
+
+        function desconectar() {
+            if (ws) ws.close();
+            desconectarUI();
+        }
+
+        function desconectarUI() {
+            conectado = false;
+            const btn = document.getElementById('btn');
+            const estado = document.getElementById('estado');
+            const dot = document.getElementById('dot');
+            dot.className = 'dot';
+            estado.textContent = 'Desconectado';
+            btn.textContent = 'Conectar';
+            btn.classList.remove('conectado');
+        }
     </script>
 </body>
 </html>

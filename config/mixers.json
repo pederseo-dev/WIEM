@@ -1,0 +1,17 @@
+{
+    "Soundcraft MADI-USB Combo card": {
+        "consola": "Soundcraft UI24R",
+        "canales": [
+            { "nombre": "Aux 1", "dispositivo": "Mic/Line In 03/04 (Soundcraft MADI-USB Combo card)", "canal": 0 },
+            { "nombre": "Aux 2", "dispositivo": "Mic/Line In 03/04 (Soundcraft MADI-USB Combo card)", "canal": 1 },
+            { "nombre": "Aux 3", "dispositivo": "Mic/Line In 05/06 (Soundcraft MADI-USB Combo card)", "canal": 0 },
+            { "nombre": "Aux 4", "dispositivo": "Mic/Line In 05/06 (Soundcraft MADI-USB Combo card)", "canal": 1 },
+            { "nombre": "Aux 5", "dispositivo": "Mic/Line In 07/08 (Soundcraft MADI-USB Combo card)", "canal": 0 },
+            { "nombre": "Aux 6", "dispositivo": "Mic/Line In 07/08 (Soundcraft MADI-USB Combo card)", "canal": 1 },
+            { "nombre": "Aux 7", "dispositivo": "Mic/Line In 09/10 (Soundcraft MADI-USB Combo card)", "canal": 0 },
+            { "nombre": "Aux 8", "dispositivo": "Mic/Line In 09/10 (Soundcraft MADI-USB Combo card)", "canal": 1 },
+            { "nombre": "Aux 9",  "dispositivo": "Mic/Line In 11/12 (Soundcraft MADI-USB Combo card)", "canal": 0 },
+            { "nombre": "Aux 10", "dispositivo": "Mic/Line In 11/12 (Soundcraft MADI-USB Combo card)", "canal": 1 }
+        ]
+    }
+}
